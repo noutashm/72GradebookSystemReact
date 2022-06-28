@@ -1,34 +1,38 @@
 import React, {useEffect, useState} from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from "axios";
 
 function Login(props) {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    // const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
-        if (localStorage.getItem("Token")) {
-            setIsLoggedIn(true);
+        if (localStorage.getItem("token")) {
+            props.setIsLoggedIn(true);
         } else {
-            setIsLoggedIn(false);
+            props.setIsLoggedIn(false);
         }
-    }, [isLoggedIn]);
+    }, [props.isLoggedIn]);
 
     const usernameHandler = (event) => {
         setUsername(event.target.value)
+        localStorage.setItem("username", event.target.value)
     }
     const passwordHandler = (event) => {
         setPassword(event.target.value)
     }
 
     const login = () => {
-        axios.post('http://localhost:8000/auth/', {
+        axios.post(process.env.REACT_APP_API_LINK+'login/', {
             "username": username,
             "password": password
         }).then(response => {
-            console.log(response.data.token)
-            localStorage.setItem("Token", response.data.token);
-            setIsLoggedIn(true);
+            localStorage.setItem("token", response.data.token)
+            localStorage.setItem("userGroup", response.data.group)
+            props.setIsLoggedIn(true)
+            navigate('/')
         }).catch(error => {
             console.log(error)
         })
@@ -40,15 +44,12 @@ function Login(props) {
             <div className={'mb-3'}>
                 <label htmlFor="username" className={'form-label'}>Username</label>
                 <input id={'username'} onChange={usernameHandler} type={'text'} className={'form-control'}/>
-                {/*<input type="text" id="id_username" name="username" className={'form-control'}>*/}
             </div>
             <div className={'mb-3'}>
                 <label htmlFor="password" className={'form-label'}>Password</label>
-                {/*<input type="password" id="id_password" name="password" className={'form-control'}>*/}
                 <input id={'password'} onChange={passwordHandler} type={'password'} className={'form-control'}/>
             </div>
             <br />
-            {/*{{form.errors}}*/}
             <button onClick={login} className={'btn btn-primary'} type={"submit"}>Log In</button>
         </div>
     );

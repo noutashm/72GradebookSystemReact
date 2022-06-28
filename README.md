@@ -1,6 +1,22 @@
 This is the frontend of below repository: <br>
 https://github.com/noutashm/72GradebookSystemAPI
 
+## Superuser Credentials
+username: admin <br />
+password: admin
+
+## Other Credentials
+#### Student
+username: zaid <br />
+password: zaid
+
+#### lecturer
+username: jason <br />
+password: jason
+
+## Deployment
+https://iscg7420gradebookreact.herokuapp.com/
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).

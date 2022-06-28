@@ -1,14 +1,20 @@
 import React, {useEffect, useReducer, useState} from 'react';
-import {Link} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import axios from "axios";
 
-const initialState = {
+const initialSemesterState = {
     loading: false,
     semesters: {},
     error: ''
 }
 
-const reducer = (state, action) => {
+const initialCourseState = {
+    loading: false,
+    courses: {},
+    error: ''
+}
+
+const semesterReducer = (state, action) => {
     switch (action.type) {
         case 'success':
             return {
@@ -20,24 +26,64 @@ const reducer = (state, action) => {
             return {
                 loading: true,
                 semesters: [],
-                error: "Error when fetch data"
+                error: "Error when fetching data!"
+            }
+    }
+}
+const courseReducer = (state, action) => {
+    switch (action.type) {
+        case 'success':
+            return {
+                loading: true,
+                courses: action.payload,
+                error: ''
+            }
+        case 'error':
+            return {
+                loading: true,
+                courses: [],
+                error: "Error when fetching data!"
             }
     }
 }
 
 function ListSemesters(props) {
-    const [state, dispatch] = useReducer(reducer, initialState);
+    const [semesterState, semesterDispatch] = useReducer(semesterReducer, initialSemesterState)
+    const [courseState, courseDispatch] = useReducer(courseReducer, initialCourseState)
+    const [token, setToken] = useState('')
+    const navigate = useNavigate()
+    let semesterCourseIDs = []
 
     useEffect(() => {
-        // https://iscg7420gradebookapi.herokuapp.com/semester
-        axios.get('http://localhost:8000/semester/').then(response => {
-            dispatch({type: 'success', payload: response.data});
-            console.log(response);
-        }).catch(error => {
-            dispatch({type: 'error'});
-            console.log(error);
-        })
-    }, []);
+        if (localStorage.getItem("token")){
+            setToken(localStorage.getItem("token"))
+            axios.get(process.env.REACT_APP_API_LINK +'semester/', {
+                headers: {
+                    Authorization: "Token "+localStorage.getItem("token")
+                }
+            }).then(response => {
+                semesterDispatch({type: 'success', payload: response.data});
+            }).catch(error => {
+                semesterDispatch({type: 'error'});
+                console.log(error);
+            })
+
+            axios.get(process.env.REACT_APP_API_LINK +'course/', {
+                headers: {
+                    Authorization: "Token "+localStorage.getItem("token")
+                }
+            }).then(response => {
+                courseDispatch({type: 'success', payload: response.data});
+            }).catch(error => {
+                courseDispatch({type: 'error'});
+                console.log(error);
+            })
+        } else {
+            setToken('')
+            navigate('/login')
+            alert('Please sign in to see semesters!')
+        }
+    }, [token]);
 
     return (
         <div className={'container'}>
@@ -48,50 +94,44 @@ function ListSemesters(props) {
                     <th scope="col">Year</th>
                     <th scope="col">Semester</th>
                     <th scope="col">Courses</th>
-                    <th><Link to={'create'} className={'btn btn-primary'} style={{float: "right", width: "168px"}}>Create</Link></th>
+                    <th><Link to={'create'} state={{ coursesList: courseState.courses }} className={'btn btn-primary'} style={{float: "right", width: "168px"}}>Create</Link></th>
                 </tr>
                 </thead>
                 <tbody>
                 {
-                    state.loading ? state.semesters.map(semester => {
+                    semesterState.loading ? semesterState.semesters.map(semester => {
                         return(
                             <tr>
                                 <td key={semester.id}>{semester.year}</td>
                                 <td>{semester.semester}</td>
                                 <td>
-                                    {/*{% for course in semester.courses.all %}*/}
-                                    {/*    <a href="{% url "list_courses" %}">{{ course }}</a><br \>*/}
-                                    {/*{% endfor %}*/}
-                                    {/*{semester.courses.map(course => {*/}
-                                    {/*    return(<Link to={'/courses'}>{course.name}</Link>)*/}
-                                    {/*})}*/}
+                                    {
+                                        courseState.loading ? courseState.courses.map(course => {
+                                            return (
+                                                semester.courses.map(semesterCourse => {
+                                                    if(semesterCourse === course.id) {
+                                                        semesterCourseIDs.push(course.id)
+                                                        return(<div><Link to={'/courses'}>{course.name}</Link></div>)
+                                                    }
+                                                })
+                                            )
+                                        }): 'Loading...'
+                                    }
                                 </td>
                                 <td>
-                                    <Link to={'delete'} className={'btn btn-danger'} style={{float: "right"}}>Delete</Link>
-                                    <Link to={'update'} className={'btn btn-success'} style={{float: "right", marginRight: "20px"}}>Update</Link>
+                                    <Link to={'delete'} state={{ semesterID: semester.id }} className={'btn btn-danger'} style={{float: "right"}}>Delete</Link>
+                                    <Link to={'update'} state={{
+                                        semesterID: semester.id,
+                                        semesterYear: semester.year,
+                                        semesterSemester: semester.semester,
+                                        semesterCoursesIDs: semesterCourseIDs,
+                                        coursesList: courseState.courses
+                                    }} className={'btn btn-success'} style={{float: "right", marginRight: "20px"}}>Update</Link>
                                 </td>
                             </tr>
-
                         )
-                    }):"Loading"
+                    }): 'Loading...'
                 }
-                {/*{% for semester in object_list %}*/}
-                {/*    <tr>*/}
-                {/*        <td>{{ semester.year }}</td>*/}
-                {/*        <td>{{ semester.semester }}</td>*/}
-                {/*        <td>*/}
-                {/*            {% for course in semester.courses.all %}*/}
-                {/*                <a href="{% url "list_courses" %}">{{ course }}</a><br \>*/}
-                {/*            {% endfor %}*/}
-                {/*        </td>*/}
-                {/*        <td>*/}
-                {/*            <a href="{% url "delete_semester" semester.id %}" class="btn btn-danger"*/}
-                {/*               style="float: right">Delete</a>*/}
-                {/*            <a href="{% url "update_semester" semester.id %}" class="btn btn-success"*/}
-                {/*               style="float: right; margin-right: 20px">Update</a>*/}
-                {/*        </td>*/}
-                {/*    </tr>*/}
-                {/*{% endfor %}*/}
                 </tbody>
             </table>
         </div>
